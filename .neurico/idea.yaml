@@ -1,0 +1,25 @@
+idea:
+  title: Interpolation for Incongruent Concepts
+  domain: theory
+  hypothesis: 'Investigating interpolation between incongruent concepts may reveal
+    different outcomes compared to interpolation between causally separable concepts,
+    as emphasized in the linear representation hypothesis and information geometry
+    literature.
+
+    '
+  background:
+    description: 'The line of work on linear representation hypothesis and information
+      geometry puts a strong emphasis on causally separable "concepts" and examines
+      the curvature from interpolation either in the primal space or dual space. What
+      about interpolation for incongruent concepts? What would the outcomes look like?
+
+      '
+  metadata:
+    author: Chenhao Tan
+    source: IdeaHub
+    source_url: https://hypogenic.ai/ideahub/idea/Z4q4M3MyfBsU9Th4CrNz
+    idea_id: interpolation_for_incongruent__20260419_205736_8d132552
+    created_at: '2026-04-19T20:57:36.370140'
+    status: submitted
+    github_repo_name: interp-incongruent-3e42-gemini
+    github_repo_url: https://github.com/Hypogenic-AI/interp-incongruent-3e42-gemini
