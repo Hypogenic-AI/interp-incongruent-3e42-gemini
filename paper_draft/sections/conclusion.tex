@@ -1,0 +1,7 @@
+\section{Conclusion}
+
+In this work, we have investigated the information geometry of \incongruent semantic concepts in \gpttwo. By performing linear interpolation (\lerp) and analyzing the resulting paths through the lens of information metrics and \sae diagnostics, we have uncovered a ``curvature crisis'' in the model's activation space. Our results show that while linear representations hold for semantically related concepts, \incongruent paths lead to massive spikes in local curvature and significant drift off the learned manifold.
+
+{\bf Key Takeaway.} The semantic manifold of Large Language Models is not globally flat; instead, it is composed of highly curved, semantically disjoint regions where linear interpolation fails to maintain on-manifold representations.
+
+{\bf Future Work.} Future research should explore alternative interpolation methods, such as Spherical Linear Interpolation (\slerp) or geodesic paths found via information geometry, to see if they can maintain manifold alignment better than \lerp. Furthermore, scaling this study to 175B+ parameter models will be crucial for determining if these semantic cliffs are a fundamental property of transformer architectures or an artifact of model scale.

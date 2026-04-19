@@ -1,0 +1,27 @@
+{
+  "success": true,
+  "stages": {
+    "resource_finder": {
+      "success": true,
+      "completion_marker": "/workspaces/interp-incongruent-3e42-gemini/.resource_finder_complete",
+      "outputs": {
+        "literature_review": "/workspaces/interp-incongruent-3e42-gemini/literature_review.md",
+        "resources_catalog": "/workspaces/interp-incongruent-3e42-gemini/resources.md",
+        "papers_dir": "/workspaces/interp-incongruent-3e42-gemini/papers",
+        "datasets_dir": "/workspaces/interp-incongruent-3e42-gemini/datasets",
+        "code_dir": "/workspaces/interp-incongruent-3e42-gemini/code"
+      },
+      "log_file": "/workspaces/interp-incongruent-3e42-gemini/logs/resource_finder_gemini.log",
+      "transcript_file": "/workspaces/interp-incongruent-3e42-gemini/logs/resource_finder_gemini_transcript.jsonl",
+      "elapsed_time": 815.0914056301117
+    },
+    "experiment_runner": {
+      "success": true,
+      "return_code": 0,
+      "elapsed_time": 568.2799832820892,
+      "log_file": "/workspaces/interp-incongruent-3e42-gemini/logs/execution_gemini.log",
+      "transcript_file": "/workspaces/interp-incongruent-3e42-gemini/logs/execution_gemini_transcript.jsonl"
+    }
+  },
+  "work_dir": "/workspaces/interp-incongruent-3e42-gemini"
+}

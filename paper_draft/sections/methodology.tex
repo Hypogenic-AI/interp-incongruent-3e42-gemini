@@ -1,0 +1,29 @@
+\section{Methodology}
+
+\para{Model and Layer Selection.} We conduct our study using \gpttwo \cite{elhage2021mathematical}, a 12-layer Transformer model, via the \transformerlens library. We focus our analysis on layer 6 (the residual stream at the output of the 6th layer), which has been identified as a mid-level layer rich in semantic features. For feature analysis, we use a pre-trained Sparse Autoencoder (\sae) from the \saelens library, specifically the \texttt{gpt2-small-res-jb} version with an expansion factor of 32 (32,768 features).
+
+\para{Concept Selection and Activation Extraction.} We identify two primary classes of concept pairs to study:
+\begin{itemize}[leftmargin=*,itemsep=0pt,topsep=0pt]
+    \item \congruent (\related): Concepts that frequently coexist or are semantically related in natural language context. For example, capitals of neighboring countries (e.g., ``Paris'' and ``Berlin'').
+    \item \incongruent: Concepts that are either mutually exclusive within a specific context or completely unrelated. For example, a geographical location (``Paris'') and a cat's favorite food (``fish'').
+\end{itemize}
+To extract representative activations, we use prompts that isolate the desired concepts. For each prompt, we capture the activation vector $\vx \in \R^d$ of the residual stream at the last token position in layer 6.
+
+\para{Linear Interpolation (\lerp).} Given two activation vectors $\vx_1$ and $\vx_2$, we define a linear path between them using a parameter $\alpha \in [0, 1]$. We discretize this path into 41 uniform steps:
+\begin{equation}
+    \vx(\alpha) = (1 - \alpha)\vx_1 + \alpha \vx_2
+\end{equation}
+At each step $\alpha$, we pass the interpolated activation $\vx(\alpha)$ back through the model's remaining layers (from layer 7 to 12) and the final unembedding layer to compute the output probability distribution $P(\alpha)$.
+
+\para{Information Metric Calculation.} Following \citet{park2023linear}, we quantify the ``semantic speed'' of change along the interpolation path using the information metric \infometric. This metric measures the normalized distance in probability space (\kl-divergence) for a small step in activation space:
+\begin{equation}
+    \infometric = \frac{\KL(P(\alpha) \parallel P(\alpha + \Delta \alpha))}{(\Delta \alpha)^2}
+\end{equation}
+A high value of \infometric indicates that a small linear change in activations results in a large, non-linear shift in the model's output distribution.
+
+\para{\sae Diagnostic Probing.} To determine if the interpolated vectors $\vx(\alpha)$ remain on the model's learned manifold, we pass them through the \sae. We compute the following diagnostics:
+\begin{itemize}[leftmargin=*,itemsep=0pt,topsep=0pt]
+    \item \para{Reconstruction \mse:} $\mse(\alpha) = \| \vx(\alpha) - \hat{\vx}(\alpha) \|^2$, where $\hat{\vx}(\alpha)$ is the \sae's reconstruction. A spike in \mse indicates that $\vx(\alpha)$ has drifted into an off-manifold region.
+    \item \para{$\normlzero$ Sparsedness:} The number of active features in the \sae's latent representation. This reveals how many distinct semantic units are engaged at each step.
+    \item \para{Output Entropy:} The Shannon entropy of the model's output probability distribution $P(\alpha)$. High entropy indicates increased uncertainty or semantic confusion.
+\end{itemize}

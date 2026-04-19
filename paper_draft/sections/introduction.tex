@@ -1,0 +1,19 @@
+\section{Introduction}
+
+How do Large Language Models (LLMs) represent the world's semantic structure? The Linear Representation Hypothesis (\lrh) \cite{park2023linear} has become a dominant framework for understanding this, suggesting that high-level concepts are encoded as specific directions (vectors) in the model's activation space. This linear structure has enabled powerful techniques for model steering and intervention, such as adding a ``honesty'' vector to reduce hallucinations or using Concept Activation Vectors (CAVs) to interpret model decisions. However, these techniques typically operate under the assumption that the representation space is globally flat or Euclidean, allowing for smooth linear manipulation.
+
+{\bf Why does this matter?} Understanding the limits of linear representations is critical for the safety and reliability of LLM steering. If the semantic manifold of a model is not truly linear but highly curved or disjoint, then linear interventions might inadvertently push the model's state into ``off-manifold'' regions. These regions of activation space, which the model has rarely encountered during training, could lead to unpredictable behaviors, nonsensical outputs, or a breakdown in semantic consistency.
+
+{\bf What is the gap?} Despite the success of linear steering for related concepts (e.g., shifting from ``Paris'' toward ``Berlin''), there is a lack of systematic study on how models behave when we force a linear path between \incongruent concepts—concepts that are naturally unrelated (e.g., a city vs. a cat's food) or mutually exclusive (e.g., different capitals for the same country). Existing work has explored superposition in toy models \cite{elhage2022toy} and visual superposition in diffusion models \cite{white2022schrodinger}, but the information geometry of incongruent semantic interpolation in LLMs remains largely unexplored.
+
+{\bf Our approach.} In this work, we stress-test the \lrh by performing linear interpolation (\lerp) between congruent and \incongruent concepts in \gpttwo. We extract residual stream activations at layer 6 and compute the information metric \cite{park2023linear}, defined as the rate of change of the output probability distribution (\kl-divergence) relative to steps in activation space. To diagnose whether these paths stay on the model's learned manifold, we use a Sparse Autoencoder (\sae) from \saelens \cite{cunningham2023sparse} to measure reconstruction error and feature sparsity along the interpolation path.
+
+{\bf Quantitative preview.} Our experiments reveal a massive disparity between congruent and \incongruent paths. While congruent interpolations are smooth and stay on-manifold, \incongruent paths exhibit a 480$\times$ higher peak in the information metric, suggesting extreme local curvature. Furthermore, the maximum \sae reconstruction \mse increases by 30.7\% for \incongruent paths, accompanied by a spike in output entropy and an unexpected sparsification of features at the midpoint.
+
+{\bf Contributions.} Our main contributions are as follows:
+\begin{itemize}[leftmargin=*,itemsep=0pt,topsep=0pt]
+    \item We identify and quantify a ``curvature crisis'' in LLM activation space, where \incongruent semantic concepts are separated by regions of extreme non-linearity.
+    \item We provide empirical evidence that linear interpolation between unrelated concepts drifts off the learned manifold, as evidenced by a 30.7\% increase in \sae reconstruction error.
+    \item We demonstrate that forced incongruence leads to a unique sparsification effect, where the model ``shuts down'' specialized features and reverts to a high-entropy, low-information state.
+    \item We propose using information geometry as a diagnostic tool for identifying the semantic boundaries of LLMs.
+\end{itemize}

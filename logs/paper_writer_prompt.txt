@@ -1,0 +1,488 @@
+You are an academic paper writer. Generate a complete NEURIPS style paper
+based on the experiment results provided.
+
+════════════════════════════════════════════════════════════════════════════════
+                         IMPORTANT: BEFORE YOU START
+════════════════════════════════════════════════════════════════════════════════
+
+Before writing any content, you MUST complete these steps:
+
+1. READ THE SKILL: Review the paper-writer skill at .gemini/skills/paper-writer/SKILL.md
+2. READ THE STYLE GUIDE: Study templates/paper_writing/lab_style_guide.md carefully
+3. REVIEW EXAMPLES: Browse paper_examples/ for formatting and language patterns:
+   - Look at sections/1.introduction.tex for language style
+   - Look at tables/*.tex for table formatting
+   - Look at commands/*.tex for macro usage
+4. VERIFY COMMAND TEMPLATES: Command templates (math.tex, general.tex, macros.tex) are pre-copied to paper_draft/commands/
+
+CRITICAL: Reference example papers for FORMATTING and LANGUAGE STYLE only.
+Do NOT copy content, phrasing, or narrative structure from the example papers.
+The examples are in a different research domain - focus only on presentation style.
+
+════════════════════════════════════════════════════════════════════════════════
+                            EXPERIMENT REPORT
+════════════════════════════════════════════════════════════════════════════════
+
+# REPORT: Interpolation for Incongruent Concepts
+
+## 1. Executive Summary
+This research investigates the behavior of Large Language Models (LLMs) when interpolating between &#34;incongruent&#34; (unrelated or mutually exclusive) concepts in their internal activation space. We find that while interpolation between related concepts (e.g., capitals of neighboring countries) is smooth and stays &#34;on-manifold,&#34; interpolation between incongruent concepts (e.g., the capital of France and the favorite food of a cat) reveals extreme non-Euclidean geometry. Specifically, incongruent paths exhibit a 480x higher information metric (KL-divergence rate in probability space), higher Sparse Autoencoder (SAE) reconstruction error (+30%), and a significant increase in output entropy, suggesting that the model&#39;s representation space is not globally flat but consists of highly curved, disjoint semantic regions.
+
+## 2. Research Question &amp; Motivation
+The Linear Representation Hypothesis (LRH) suggests that semantic concepts are directions in activation space. However, most research focuses on nearly orthogonal, independent concepts. This project asks: **What happens to the model&#39;s internal state and external predictions when we force a linear path between concepts that do not naturally coexist or relate?** This is critical for understanding the limits of model &#34;steering&#34; and the safety of linear interventions.
+
+## 3. Methodology
+- **Model**: GPT-2 Small (`gpt2-small` via `transformer_lens`).
+- **Layers**: Layer 6 (middle layer, rich in semantic features).
+- **Probing**: Used a Sparse Autoencoder (SAE) from `sae_lens` (`gpt2-small-res-jb`) to analyze feature composition.
+- **Experimental Protocol**:
+    1.  **Selection**: Identified pairs of Related (e.g., &#34;Paris&#34; and &#34;Berlin&#34;) and Incongruent (e.g., &#34;Paris&#34; and &#34;fish&#34;) concepts within natural language contexts.
+    2.  **Extraction**: Captured residual stream activations at the last token of the context.
+    3.  **Interpolation**: Performed Linear Interpolation (LERP) across 41 steps.
+    4.  **Metric Calculation**: Computed the **Information Metric** $g(\alpha) = \frac{KL(P(\alpha) || P(\alpha + \Delta \alpha))}{(\Delta \alpha)^2}$, where $P$ is the output probability distribution.
+    5.  **Diagnostic**: Measured SAE reconstruction MSE and $L0$ sparsity along the path.
+
+## 4. Results
+| Metric | Related Path | Incongruent Path | Ratio / Difference |
+| :--- | :--- | :--- | :--- |
+| **Max Information Metric ($g(\alpha)$)** | 0.0084 | 4.0396 | **~480x Higher** |
+| **SAE Reconstruction MSE (Max)** | 0.4396 | 0.5747 | **+30.7% Higher** |
+| **Mid-point Entropy Peak** | -0.0061 | +0.1796 | **Increased Uncertainty** |
+| **L0 Trend (mid - ends)** | +2.5 | -27.0 | **Sparsification of Noise** |
+
+### Key Visualizations:
+- `results/exp3_analysis.png`: Shows the massive spike in the information metric for the incongruent case compared to the flat metric for the related case.
+- `results/final_comparison.png`: Compares the MSE &#34;hump&#34; during interpolation, showing the incongruent path is further from the model&#39;s learned manifold.
+
+## 5. Analysis &amp; Discussion
+### The &#34;Curvature Crisis&#34;
+The 480x difference in the information metric reveals that the model&#39;s internal &#34;map&#34; is not linear. For related concepts, the model transitions smoothly between states. For incongruent ones, a small step in activation space causes a &#34;catastrophic&#34; shift in the output distribution. This suggests that the &#34;semantic manifold&#34; of the model has regions of high curvature (cliffs) between unrelated concept clusters.
+
+### Off-Manifold Drift (H3 Support)
+The 30% increase in SAE MSE supports the hypothesis that linear interpolation paths between incongruent concepts drift into &#34;no-man&#39;s land&#34;—regions of activation space that the model has never encountered during training. This explains why steering models toward unrelated concepts often leads to &#34;hallucinations&#34; or nonsensical outputs.
+
+### Unexpected Sparsification
+Interestingly, while related concepts often increase in $L0$ (superposition), the incongruent midpoint showed a massive *decrease* in $L0$. This suggests that when forced into an incongruent state, the model &#34;shuts down&#34; many of its specialized features, falling back into a low-dimensional &#34;noise&#34; or &#34;default&#34; state.
+
+## 6. Limitations
+- **Model Scale**: GPT-2 Small is a 12-layer model. Larger models (e.g., Llama-3) might exhibit different geometric properties due to better packing.
+- **SAE Quality**: SAEs only capture a fraction of the model&#39;s features. The &#34;off-manifold&#34; results are relative to the SAE&#39;s reconstruction ability.
+- **Prompt Sensitivity**: The choice of &#34;context&#34; (e.g., &#34;The capital of...&#34;) might bias the results.
+
+## 7. Conclusions &amp; Next Steps
+Interpolation for incongruent concepts is **non-linear and off-manifold**. Future work should:
+1.  Investigate **Spherical Linear Interpolation (SLERP)** as an alternative to LERP for semantic concepts.
+2.  Use **Information Geometry** to find &#34;geodesic&#34; (shortest-path in probability space) paths between concepts to see if they avoid the MSE peaks.
+3.  Scale this study to **175B+ parameter models** to see if &#34;semantic cliffs&#34; smooth out with scale.
+
+## References
+1.  Elhage et al., &#34;Toy Models of Superposition&#34;, 2022.
+2.  White &amp; Cotterell, &#34;Schrödinger&#39;s Bat&#34;, 2022.
+3.  Park et al., &#34;The Linear Representation Hypothesis and the Geometry of LLMs&#34;, 2023.
+
+
+════════════════════════════════════════════════════════════════════════════════
+                            RESEARCH PLAN
+════════════════════════════════════════════════════════════════════════════════
+
+# Research Plan: Interpolation for Incongruent Concepts
+
+## Motivation &amp; Novelty Assessment
+
+### Why This Research Matters
+Linear Representation Hypothesis (LRH) and steering techniques (like CAVs) assume that we can linearly manipulate concepts in activation space. However, most real-world concepts are not perfectly independent. Interpolation between incongruent (mutually exclusive or unrelated) concepts is a &#34;stress test&#34; for LRH. If interpolation leads to &#34;hallucinated&#34; or nonsensical intermediate states, it reveals the limits of linear steering and the underlying geometry of the model&#39;s &#34;world model.&#34;
+
+### Gap in Existing Work
+Existing work (e.g., Toy Models of Superposition) focuses on how features are packed. &#34;Schrödinger&#39;s Bat&#34; showed visual superposition in diffusion. However, there is a lack of systematic study on the *information geometry* (the relationship between activation interpolation and probability manifold movement) for *incongruent semantic concepts* in LLMs. We don&#39;t fully understand if the model &#34;perceives&#34; the path between &#34;Paris&#34; and &#34;London&#34; as a smooth blend or a leap over a chasm of low probability.
+
+### Our Novel Contribution
+We will:
+1.  Define &#34;Incongruence&#34; types: **Mutually Exclusive** (Paris vs. London as capitals) and **Unrelated** (Paris vs. Justice).
+2.  Map the **Logit Landscape**: Track the output probability distribution along the interpolation path.
+3.  **SAE Diagnostic**: Use Sparse Autoencoders to determine if intermediate states are recognized as valid feature combinations or as &#34;interference noise.&#34;
+
+### Experiment Justification
+- **Experiment 1: Logit Path Analysis**: Essential to see how the model&#39;s &#34;belief&#34; shifts. Does it show a &#34;bistable&#34; jump or a &#34;superposed&#34; state?
+- **Experiment 2: SAE Feature Decomposition**: Essential to determine if the linear path stays on the &#34;semantic manifold&#34; or if it activates &#34;junk&#34; features.
+- **Experiment 3: Information Geometry (Metric Calculation)**: Measure the &#34;distance&#34; in probability space relative to activation space to identify regions of high curvature.
+
+## Research Question
+How does the output distribution and internal feature representation of an LLM behave during interpolation between incongruent concepts, and does this behavior reveal non-Euclidean geometry in the representation space?
+
+## Background and Motivation
+LRH suggests semantic concepts are vectors. Interpolation is the simplest operation between them. For &#34;congruent&#34; (correlated) concepts, this is well-studied. For &#34;incongruent&#34; ones, it&#39;s a frontier. This connects to &#34;superposition&#34; (how models store competing features) and &#34;interference&#34; (when those features clash).
+
+## Hypothesis Decomposition
+- **H1 (Bistability)**: For mutually exclusive concepts, the model&#39;s output will jump sharply between states rather than showing a smooth blend (Winner-Take-All).
+- **H2 (Superposition)**: For unrelated concepts, the model will represent a superposition where both concepts are simultaneously &#34;active&#34; without interference.
+- **H3 (Off-Manifold)**: Linear interpolation paths between distant incongruent concepts will pass through &#34;empty&#34; regions of activation space where SAE reconstruction error is high.
+
+## Proposed Methodology
+
+### Approach
+We will use `TransformerLens` to extract activations from a mid-sized LLM (e.g., GPT-2 Small or Llama-3-8B if resources permit, but GPT-2 is easier for SAEs) and `SAELens` to analyze the features.
+
+### Experimental Steps
+1.  **Selection of Concept Pairs**:
+    *   *Congruent*: &#34;France&#34; -&gt; &#34;Spain&#34; (Geographically related).
+    *   *Incongruent (Exclusive)*: &#34;The capital of France is [Paris]&#34; vs. &#34;The capital of France is [London]&#34;.
+    *   *Incongruent (Unrelated)*: &#34;Paris&#34; vs. &#34;Justice&#34;.
+2.  **Activation Extraction**: Generate activations for prompts representing these concepts.
+3.  **Interpolation**: Perform LERP between the mean activation vectors.
+4.  **Logit Lens**: Pass interpolated activations through the model&#39;s unembedding head to see the output distribution.
+5.  **SAE Probing**: Pass interpolated activations through a pre-trained SAE to see which features activate and measure reconstruction error.
+6.  **Curvature Measurement**: Calculate the KL-divergence between adjacent steps in the interpolation to find the &#34;information metric.&#34;
+
+### Baselines
+- **Random Path**: Interpolation between a concept and a random vector.
+- **Congruent Path**: Interpolation between related concepts (e.g., &#34;Paris&#34; and &#34;Lyon&#34;).
+
+### Evaluation Metrics
+- **Entropy of Output Distribution**: High entropy indicates &#34;blending&#34; or &#34;confusion.&#34;
+- **SAE L0 (Sparsity)**: How many features are active.
+- **SAE Reconstruction MSE**: Indicates if the vector is &#34;on-manifold.&#34;
+- **KL Divergence Rate**: Measuring the &#34;speed&#34; of change in probability space.
+
+### Statistical Analysis Plan
+We will perform multiple runs across different layers and different concept pairs to ensure the findings are not specific to one instance. We will use t-tests to compare the average SAE error on congruent vs. incongruent paths.
+
+## Expected Outcomes
+- Mutually exclusive concepts will show a &#34;phase transition&#34; (sharp jump) in probability.
+- Unrelated concepts will show a &#34;flat&#34; superposition (both features active).
+- Incongruent paths will show higher SAE reconstruction error in the middle compared to congruent ones.
+
+## Timeline and Milestones
+1.  **Environment Setup**: 15 min.
+2.  **Implementation (Activation &amp; SAE)**: 60 min.
+3.  **Data Collection &amp; Experiments**: 90 min.
+4.  **Analysis &amp; Visualization**: 45 min.
+5.  **Documentation**: 30 min.
+
+## Potential Challenges
+- Finding good &#34;incongruent&#34; pairs that the model actually understands.
+- SAEs might not be available for the layer we want to study.
+- GPT-2 might be too simple to show complex semantic incongruence.
+
+## Success Criteria
+- Successful visualization of the logit landscape for at least 3 pairs.
+- Quantifiable difference in SAE behavior between congruent and incongruent paths.
+- A &#34;Metric&#34; map showing where the model &#34;perceives&#34; the largest semantic distance.
+
+
+════════════════════════════════════════════════════════════════════════════════
+                          LITERATURE REVIEW
+════════════════════════════════════════════════════════════════════════════════
+
+# Literature Review: Interpolation for Incongruent Concepts
+
+## Research Area Overview
+The Linear Representation Hypothesis (LRH) posits that high-level semantic concepts are represented as directions (vectors) in the activation space of neural networks. Recent work has extended this to explore the geometry of these representations (information geometry) and how they handle multiple concepts simultaneously (superposition). A key area of interest is how models behave when we interpolate between &#34;incongruent&#34; concepts—concepts that are not naturally related or causally separable.
+
+## Key Papers
+
+### 1. Schrödinger&#39;s Bat: Diffusion Models Sometimes Generate Polysemous Words in Superposition
+- **Authors**: Jennifer C. White, Ryan Cotterell
+- **Year**: 2022
+- **Source**: arXiv (2211.13095)
+- **Key Contribution**: Demonstrates that diffusion models can generate images containing multiple senses of a polysemous word because CLIP encodes these senses in linear superposition.
+- **Methodology**: Used weighted sums of CLIP encodings ($\alpha_1 \text{CLIP}(s_1) + \alpha_2 \text{CLIP}(s_2)$) to steer Stable Diffusion.
+- **Relevance**: Directly shows that &#34;interpolation&#34; (weighted sum) of incongruent concepts (different word senses) leads to a visual superposition in diffusion models.
+
+### 2. Toy Models of Superposition
+- **Authors**: Nelson Elhage et al. (Anthropic)
+- **Year**: 2022
+- **Source**: arXiv (2209.10652)
+- **Key Contribution**: Provides a theoretical and empirical framework for understanding how models store more features than they have dimensions by using superposition.
+- **Methodology**: Trained small ReLU networks on synthetic sparse features.
+- **Key Findings**: Features are organized into geometric structures (polytopes) to minimize interference.
+- **Relevance**: Explains the underlying mechanism (superposition) that allows incongruent concepts to coexist in the same representation space.
+
+### 3. The Linear Representation Hypothesis and the Geometry of Large Language Models
+- **Authors**: Kiho Park et al.
+- **Year**: 2023
+- **Source**: arXiv (2311.03658)
+- **Key Contribution**: Investigates the LRH from a geometric perspective, finding that representation spaces often have non-Euclidean structures.
+- **Relevance**: Suggests that simple linear interpolation might not be the &#34;natural&#34; path between concepts in LLMs.
+
+### 4. On the Origins of Linear Representations in Large Language Models
+- **Authors**: Yibo Jiang et al.
+- **Year**: 2024
+- **Source**: arXiv (2403.03867)
+- **Key Contribution**: Shows that independent concepts are represented almost orthogonally due to the next-token prediction objective and gradient descent bias.
+- **Relevance**: Orthogonality between concepts is a prerequisite for clean interpolation but also leads to &#34;incongruent&#34; mixtures when summed.
+
+### 5. Sparse Autoencoders Find Highly Interpretable Features in Language Models
+- **Authors**: Cunningham et al.
+- **Year**: 2023
+- **Source**: arXiv (2309.08600)
+- **Key Contribution**: Uses Sparse Autoencoders (SAEs) to decompose polysemantic neurons into monosemantic features.
+- **Relevance**: Provides tools (SAEs) to isolate and then interpolate between specific concepts without the &#34;noise&#34; of other features in the same neuron.
+
+## Common Methodologies
+- **Steering/Intervention**: Adding or subtracting concept vectors (e.g., from CLIP or LLM activations) to change model behavior.
+- **Activation Probing**: Training linear classifiers to detect concepts in representation space.
+- **Synthetic &#34;Toy&#34; Models**: Using small, controlled models to study fundamental properties like superposition.
+- **Information Geometry**: Analyzing the metric structure of the representation space (e.g., using Fisher Information Metric).
+
+## Standard Baselines
+- **Linear Interpolation (LERP)**: $v = (1-t)v_1 + t v_2$.
+- **Spherical Linear Interpolation (SLERP)**: Used for normalized vectors (common in GANs/Diffusion).
+- **Concept Activation Vectors (CAV)**: Standard method for identifying concept directions.
+
+## Evaluation Metrics
+- **Logit Lens / Tuned Lens**: Measuring how interpolation affects output probabilities.
+- **Visual Inspection**: In generative models, checking if both concepts appear (as in Schrödinger&#39;s Bat).
+- **SAE Reconstruction Error**: Checking if the interpolated point remains &#34;on-manifold&#34; according to a Sparse Autoencoder.
+
+## Datasets in the Literature
+- **WiC (Word in Context)**: For studying polysemy.
+- **Geometry of Truth (Cities, Facts)**: For studying simple, binary semantic concepts.
+- **MS-COCO / LAION**: For large-scale image-text concept studies.
+- **Synthetic Sparse Features**: As used in Toy Models of Superposition.
+
+## Recommendations for Our Experiment
+1. **Synthetic Setup**: Replicate the Toy Models of Superposition approach to study how the model handles &#34;incongruent&#34; (independent) features vs. &#34;congruent&#34; (correlated) features during interpolation.
+2. **LLM Probing**: Use `TransformerLens` to extract activations for incongruent pairs (e.g., &#34;Paris&#34; and &#34;Justice&#34;) and observe the &#34;in-between&#34; states.
+3. **SAE Validation**: Use `SAELens` to see if interpolated vectors are recognized as valid combinations of features or if they fall into &#34;empty&#34; space.
+4. **Diffusion Steering**: Replicate the &#34;Schrödinger&#39;s Bat&#34; weighted sum experiment with more varied incongruent concepts to see the limits of superposition.
+
+
+════════════════════════════════════════════════════════════════════════════════
+                          PAPER REQUIREMENTS
+════════════════════════════════════════════════════════════════════════════════
+
+Generate a complete academic paper with the following structure:
+
+1. TITLE
+   - Clear, specific, informative
+   - Should convey main finding or contribution
+
+2. AUTHOR
+   - Use this exact author line in the \author{} block: Chenhao Tan and NeuriCo
+
+3. ABSTRACT (150-250 words)
+   - Problem statement
+   - Approach
+   - Key results
+   - Significance
+
+4. INTRODUCTION
+   - Research problem and motivation
+   - Gap in existing work
+   - Our contribution (be specific)
+   - Paper organization
+
+5. RELATED WORK
+   - Organized by theme/approach
+   - Position our work relative to prior work
+   - Cite papers from literature review
+
+6. METHODOLOGY
+   - Clear description of approach
+   - Experimental setup
+   - Datasets used
+   - Evaluation metrics
+   - Baselines
+
+7. RESULTS
+   - Present results with tables and figures
+   - Statistical analysis
+   - Comparison to baselines
+   - Ablation studies (if applicable)
+
+8. DISCUSSION
+   - Interpretation of results
+   - Limitations
+   - Broader implications
+
+9. CONCLUSION
+   - Summary of contributions
+   - Key findings
+   - Future work
+
+10. REFERENCES
+   - BibTeX format
+   - All cited papers
+
+════════════════════════════════════════════════════════════════════════════════
+                          OUTPUT FORMAT
+════════════════════════════════════════════════════════════════════════════════
+
+Create a MODULAR LaTeX project with the following directory structure:
+
+paper_draft/
+├── main.tex              # Main file that imports all sections
+├── references.bib        # BibTeX references
+├── sections/
+│   ├── abstract.tex      # Abstract content
+│   ├── introduction.tex  # Introduction section
+│   ├── related_work.tex  # Related work section
+│   ├── methodology.tex   # Methodology section
+│   ├── results.tex       # Results section
+│   ├── discussion.tex    # Discussion section
+│   └── conclusion.tex    # Conclusion section
+├── figures/              # Directory for any generated figures
+├── tables/               # Directory for complex standalone tables
+└── appendix/             # Directory for appendix sections (if needed)
+
+INSTRUCTIONS:
+1. First, create the directory structure above (mkdir -p paper_draft/sections paper_draft/figures paper_draft/tables paper_draft/appendix)
+2. Write main.tex using the EXACT preamble for NEURIPS:
+
+   \documentclass{article}
+   \usepackage[final]{neurips_2025}  % NEURIPS style (neurips_2025.sty is in paper_draft/)
+   \usepackage[hidelinks]{hyperref}  % REQUIRED: clickable links
+   \usepackage{booktabs}  % REQUIRED: professional tables
+   \usepackage{graphicx}
+   \usepackage{amsmath,amssymb}
+
+   % Import command files
+   \input{commands/math}
+   \input{commands/general}
+   \input{commands/macros}
+
+   % Use this bibliography style:
+   \bibliographystyle{plainnat}
+
+   \author{Chenhao Tan and NeuriCo}
+
+   - Use \input{sections/...} to include each section
+   - Use \bibliography{references} for references
+3. Write each section file with COMPLETE content (no placeholders)
+4. Each section file should include its \section{} command
+5. Write references.bib with all citations in BibTeX format
+6. After writing all files, compile the paper:
+   cd paper_draft && pdflatex -interaction=nonstopmode main.tex && bibtex main && pdflatex -interaction=nonstopmode main.tex && pdflatex -interaction=nonstopmode main.tex
+
+This modular structure allows humans to easily:
+- Edit individual sections without navigating a large file
+- Track changes per section
+- Reuse sections across different paper versions
+
+════════════════════════════════════════════════════════════════════════════════
+                          QUALITY REQUIREMENTS
+════════════════════════════════════════════════════════════════════════════════
+
+- Academic tone throughout
+- All claims must be supported by data from the experiment report
+- Proper citations using \cite{} commands
+- Clear figures and tables with proper captions
+- NO placeholder text - every section must have real content
+- The paper MUST compile without errors
+- If compilation fails, debug and fix the LaTeX errors
+
+════════════════════════════════════════════════════════════════════════════════
+                          LAB WRITING STYLE
+════════════════════════════════════════════════════════════════════════════════
+
+Follow these lab-specific conventions to match our paper style:
+
+1. LANGUAGE STYLE:
+   - Use active voice: "We propose", "We examine", "We focus on"
+   - Be direct and confident: "Our main question is...", "We hypothesize that..."
+   - State things clearly and simply - prefer plain language over jargon
+   - Use bold questions as paragraph organizers: {\bf what is X?}
+   - Include specific quantitative claims: "8.97% over baseline"
+   - Avoid fancy wording: "utilize" → "use", "facilitate" → "help"
+
+2. INTRODUCTION STRUCTURE:
+   - Engaging hook (get to the point quickly)
+   - Problem importance
+   - Gap identification
+   - Your approach with method figure reference
+   - Quantitative preview of results
+   - Contribution bullets (3-4 items, action verbs)
+
+3. CONTRIBUTION LISTS:
+   \begin{itemize}[leftmargin=*,itemsep=0pt,topsep=0pt]
+       \item We propose...
+       \item We conduct...
+       \item We complement...
+   \end{itemize}
+
+4. MODULAR COMMANDS STRUCTURE:
+   Command templates are pre-copied to paper_draft/commands/:
+   - math.tex: Math notation macros
+   - general.tex: Formatting macros
+   - macros.tex: Project-specific term definitions (customize this for your paper)
+
+   In main.tex, include:
+   \input{commands/math}
+   \input{commands/general}
+   \input{commands/macros}
+
+5. REFERENCE CONVENTIONS:
+   Use reference macros from math.tex:
+   - \figref{fig:name} for "figure 1" (lowercase, in-sentence)
+   - \Figref{fig:name} for "Figure 1" (capitalized, start of sentence)
+   - \secref{sec:name} for "section 2"
+
+6. TEXT FORMATTING:
+   - Use \para{Header text} for bold paragraph headers
+   - Define method/dataset names with \textsc and \xspace:
+     \newcommand{\methodname}{\textsc{MethodName}\xspace}
+
+7. TABLE FORMATTING:
+   - Use booktabs package (no vertical lines)
+   - Use \resizebox{\textwidth}{!}{...} for wide tables
+   - Use @{} to remove padding at table edges
+   - Use \cmidrule(lr){x-y} for sub-headers
+   - Use \textsc{} for dataset/method names in headers
+   - Bold best results with {\bf ...}
+
+8. FIGURE FORMATTING:
+   - Use 0.32\textwidth for 3-column subfigures
+   - Use 0.95\linewidth for full-width figures
+   - Use \input{figures/legend} for shared legends
+   - Write self-contained captions explaining key observations
+
+9. RESULTS PRESENTATION:
+   - Define \increase and \decrease for colored arrows (green up, red down)
+   - Bold best results in tables
+   - Report confidence intervals when available
+
+10. ALGORITHM STYLING:
+    - Use algpseudocode with [noend]
+    - Use \triangleright for comments
+
+11. HYPERLINKS (REQUIRED):
+    - Always use \usepackage[hidelinks]{hyperref} or with colored links
+    - All citations, section refs, figure refs, table refs must be clickable
+    - This is essential for reader navigation
+
+════════════════════════════════════════════════════════════════════════════════
+                          WORKFLOW: REVIEW AND REFLECT
+════════════════════════════════════════════════════════════════════════════════
+
+Before calling finish, you MUST complete these review steps:
+
+1. REVIEW RESOURCES (at the start):
+   - Read .gemini/skills/paper-writer/SKILL.md for detailed guidance
+   - Study templates/paper_writing/lab_style_guide.md for style conventions
+   - Browse paper_examples/ for formatting and language patterns
+
+2. SELF-REFLECTION (before finishing):
+   After writing all sections, review your work against these criteria:
+
+   LANGUAGE CHECK:
+   - [ ] Is the writing clear and jargon-free?
+   - [ ] Are claims specific with quantitative support?
+   - [ ] Is active voice used throughout?
+
+   FORMATTING CHECK:
+   - [ ] Does main.tex include \input{commands/math}, \input{commands/general}, \input{commands/macros}?
+   - [ ] Is hyperref package included for clickable references?
+   - [ ] Do tables use booktabs (no vertical lines)?
+   - [ ] Are best results bolded in tables?
+   - [ ] Are figures/tables properly captioned?
+
+   STRUCTURE CHECK:
+   - [ ] Does introduction follow: hook → importance → gap → approach → preview → contributions?
+   - [ ] Are contribution bullets specific with action verbs?
+   - [ ] Does the paper compile without errors?
+
+3. FIX ISSUES:
+   - Address any issues found in the self-reflection
+   - Re-compile and verify the PDF looks correct
+
+Only after completing this review should you consider the paper finished.
